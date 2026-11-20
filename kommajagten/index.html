@@ -1,0 +1,333 @@
+<!DOCTYPE html>
+<html lang="da">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Kommajagten</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;700;800&family=Patrick+Hand&display=swap" rel="stylesheet">
+<style>
+/* VOICE: legende og klar – et spil, der lærer, ikke pynter.
+   IDEA: et skrivehæfte, hvor et lille komma selv løber hen over den linjerede side.
+   PICTURE: spillebanen: linjeret papir, viskelæder-platforme, gule sedler med spørgsmål, røde fejlorme.
+   COLOUR and TYPE: papirhvid, blæk #1d2b53, highlighter-gul #ffd84d, rødpen #e23d3d. Patrick Hand + Nunito.
+   LAYOUT: titel og status øverst, spillet som stor 16:9-flade, touch-styring under på tablet og mobil.
+*/
+:root{color-scheme:light dark;--bg:light-dark(#e9f0fa,#0d1320);--paper:light-dark(#ffffff,#18202f);--ink:light-dark(#1d2b53,#e6ecf8);--muted:light-dark(#55627f,#9fb0cf);--line:light-dark(#c9d9f2,#2a3650);--hl:#ffd84d;--red:#e23d3d;--green:#2f9e6b}
+:root[data-theme=light]{color-scheme:light}:root[data-theme=dark]{color-scheme:dark}
+*{box-sizing:border-box;min-width:0}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.5 Nunito,system-ui,sans-serif;overflow-x:clip}
+.wrap{max-width:1100px;margin:0 auto;padding:clamp(14px,3vw,32px) max(3vw,12px)}
+header{display:flex;flex-wrap:wrap;align-items:end;justify-content:space-between;gap:10px 24px;margin-bottom:12px}
+h1{font:400 clamp(34px,5vw,50px)/1.05 "Patrick Hand",cursive;margin:0}
+h1 span{background:linear-gradient(transparent 55%,var(--hl) 55%);padding:0 4px}
+#hud{display:flex;flex-wrap:wrap;gap:8px;font-weight:800;font-size:15px}
+#hud>*{background:var(--paper);border:2px solid var(--ink);border-radius:10px;padding:6px 12px;white-space:nowrap}
+#hh{color:var(--red);letter-spacing:2px}
+#hud button{font:inherit;color:inherit;cursor:pointer}
+.stage{position:relative;border:3px solid var(--ink);border-radius:16px;overflow:hidden;box-shadow:6px 6px 0 var(--ink);background:var(--paper)}
+canvas{display:block;width:100%;aspect-ratio:16/9;touch-action:none}
+#pad{display:none;gap:10px;margin-top:14px;user-select:none;-webkit-user-select:none}
+#pad button{flex:1;height:64px;font:800 22px Nunito,sans-serif;color:var(--ink);background:var(--paper);border:3px solid var(--ink);border-radius:14px;touch-action:none}
+#pad button:active{background:var(--hl);color:#1d2b53}
+#pad .j{flex:1.6}
+@media (hover:none),(max-width:700px){#pad{display:flex}}
+.note{color:var(--muted);font-size:14px;margin-top:12px}
+#ov{position:fixed;inset:0;display:none;place-items:center;padding:16px;background:rgba(13,19,32,.55);z-index:5;overflow-y:auto}
+#ov.on{display:grid}
+.card{background:var(--paper);color:var(--ink);border:3px solid var(--ink);border-radius:18px;box-shadow:6px 6px 0 var(--ink);padding:clamp(18px,3vw,30px);width:min(640px,100%)}
+.card h2{font:400 clamp(30px,4vw,40px)/1.05 "Patrick Hand",cursive;margin:0 0 10px}
+.tag{display:inline-block;background:var(--hl);color:#1d2b53;font-weight:800;border-radius:8px;padding:2px 10px;font-size:14px}
+.ex{font-family:"Patrick Hand",cursive;font-size:22px;background:light-dark(#f3f7fd,#202a3d);border-left:4px solid var(--hl);padding:4px 12px;margin:6px 0}
+.rule{border:2px dashed var(--line);border-radius:12px;padding:6px 14px;margin:10px 0}
+.btns{display:flex;flex-wrap:wrap;gap:10px;margin-top:16px}
+.b{font:800 16px Nunito,sans-serif;min-height:46px;padding:10px 18px;border-radius:12px;border:3px solid var(--ink);background:var(--hl);color:#1d2b53;cursor:pointer}
+.b.alt{background:var(--paper);color:var(--ink)}
+.b:focus-visible,.gap:focus-visible,.opt:focus-visible{outline:3px solid var(--red);outline-offset:2px}
+.lvls{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:8px;margin-top:12px}
+.lvls .b{font-size:14px;text-align:left}
+.sent{font:400 clamp(24px,3.4vw,30px)/1.6 "Patrick Hand",cursive;display:flex;flex-wrap:wrap;align-items:center;margin:14px 0}
+.gap{width:30px;height:44px;margin:0 1px;border:2px dashed var(--line);border-radius:8px;background:none;cursor:pointer;color:var(--ink);font:inherit;padding:0}
+.gap:hover{border-color:var(--ink);background:light-dark(#fff7cf,#3a3418)}
+.gap.ok{border:2px solid var(--green);background:var(--green);color:#fff}
+.gap.no{border:2px solid var(--red);background:var(--red);color:#fff}
+.opts{display:grid;gap:8px;margin:14px 0}
+.opt{text-align:left;font:700 16px Nunito,sans-serif;min-height:48px;padding:10px 14px;border:2px solid var(--ink);border-radius:12px;background:var(--paper);color:var(--ink);cursor:pointer}
+.opt.ok,.none.ok{background:var(--green);border-color:var(--green);color:#fff}
+.opt.no,.none.no{background:var(--red);border-color:var(--red);color:#fff}
+.fb{border-radius:12px;padding:10px 14px;margin-top:12px;font-weight:700}
+.fb.ok{background:light-dark(#e2f5ec,#173527)}.fb.no{background:light-dark(#fde6e6,#3a1b1d)}
+.fb .ex{font-weight:400}
+table{width:100%;border-collapse:collapse;margin-top:10px}
+td,th{padding:7px 8px;border-bottom:2px solid var(--line);text-align:left}
+td.n,th.n{text-align:right;white-space:nowrap}
+.big{font:400 44px/1 "Patrick Hand",cursive;margin:8px 0}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+</head>
+<body>
+<div class="wrap">
+<header>
+  <h1><span>Kommajagten</span></h1>
+  <div id="hud"><b id="hl">Klar?</b><span id="hh"></span><span id="hn"></span><span id="hs">0 point</span><button id="hr" type="button">Regel</button><button id="hm" type="button">Lyd: til</button></div>
+</header>
+<div class="stage"><canvas id="game" width="960" height="540" aria-label="Platformspil om tegnsætning"></canvas></div>
+<div id="pad"><button data-k="l" aria-label="Venstre">&#8592;</button><button data-k="r" aria-label="Højre">&#8594;</button><button class="j" data-k="j">Hop</button></div>
+<p class="note">Styring: piletaster eller A/D for at gå, mellemrum eller pil op for at hoppe. Hop på de gule sedler for at få et spørgsmål. Porten åbner, når alle sedler på banen er løst. Spillet bygger på elevarket »Tegnsætning til prøven« (8. klasse).</p>
+</div>
+<div id="ov" role="dialog" aria-modal="true"><div class="card" id="card"></div></div>
+<script>
+{
+const $=s=>document.querySelector(s);
+const cv=$('#game'),ctx=cv.getContext('2d'),W=960,H=540;
+let dpr=1;const fit=()=>{dpr=Math.min(window.devicePixelRatio||1,2);cv.width=W*dpr;cv.height=H*dpr};fit();addEventListener('resize',fit);
+
+const RULES={
+punktum:{name:'Punktum',card:'<p>En <b>helsætning</b> = en hovedsætning + eventuelle ledsætninger. Når den er færdig, sætter du <b>punktum</b>. Efter punktum kommer <b>stort bogstav</b>.</p><p class="ex">Jeg blev hjemme, fordi jeg var syg.</p>'},
+at:{name:'Komma før at',card:'<p>Komma før <b>at</b>, når <i>at</i> starter en ny sætning.</p><p class="ex">Jeg ved, at du har ret.</p><p><b>Pas på:</b> at + navneform (at spise, at spille) = intet komma.</p><p class="ex">Det er sjovt at spille håndbold.</p>'},
+men:{name:'Komma før men',card:'<p>Altid komma før <b>men</b> mellem to sætninger.</p><p class="ex">Jeg ville gerne med, men jeg havde ikke tid.</p>'},
+og:{name:'Komma før og',card:'<p>Komma før <b>og</b> kun, når der er en hovedsætning på begge sider.</p><p><b>Testen:</b> Kan delen før <i>og</i> stå alene? Kan delen efter <i>og</i> stå alene? To gange ja = komma.</p><p class="ex">Det er blevet dejligt vejr, og solen skinner hele dagen.</p><p class="ex">Søren kan godt lide ost og spegepølse.</p>'},
+bind:{name:'Fordi, så, da',card:'<p>Komma før bindeordene <b>fordi</b>, <b>så</b> og <b>da</b>.</p><p class="ex">Vi tog jakker på, fordi det var koldt.</p><p class="ex">Det regnede, så vi blev inde.</p><p class="ex">Vi gik hjem, da filmen var slut.</p>'},
+egennavne:{name:'Egennavne',card:'<p>Fornavn, mellemnavn og efternavn med stort.</p><p class="ex">Søren Peter Nielsen</p><p>Alle dele af vejnavnet med stort.</p><p class="ex">Holger Danskes Vej</p>'}
+};
+const ORDER=['punktum','at','men','og','bind','egennavne'];
+const LEVELS=[...ORDER.map((r,i)=>({r,t:`Bane ${i+1} · ${RULES[r].name}`})),{r:'mix',t:'Finale · Prøvebanen'}];
+
+const S=(t,ans,ex,mark=',')=>({t:'slot',w:t.split(' '),ans,ex,mark});
+const M=(q,o,ex)=>({t:'mc',q,o,ex});
+const QB={
+punktum:[
+S('Vi gik i biografen filmen var lang.',4,'To helsætninger: »Vi gik i biografen« og »Filmen var lang«. Punktum efter den første – og stort F.','.'),
+S('Jeg pakkede min taske bussen kom klokken otte.',4,'»Bussen kom klokken otte« er en ny helsætning. Punktum og stort B.','.'),
+S('Klokken ringede alle løb ud i frikvarter.',2,'»Klokken ringede« kan stå alene. Punktum – og stort A.','.'),
+M('Hvad skal der stå efter et punktum?',['Stort bogstav','Lille bogstav','Et komma'],'Efter punktum starter en ny helsætning – med stort bogstav.'),
+M('Hvad er en helsætning?',['En hovedsætning + eventuelle ledsætninger','Kun en ledsætning','Alle ord mellem to kommaer'],'Helsætningen går fra stort bogstav til punktum.'),
+M('Hvilken er rigtig?',['Det regnede hele dagen. Vi blev inde.','Det regnede hele dagen. vi blev inde.','Det regnede hele dagen vi blev inde.'],'To helsætninger: punktum imellem og stort V.'),
+M('Hvor mange punktummer skal der være? »min hund hedder Bobby han elsker at løbe«',['2','1','3'],'Min hund hedder Bobby. Han elsker at løbe. To helsætninger = to punktummer.')],
+at:[
+S('Jeg tror at vi vinder.',2,'»at vi vinder« er en ny sætning. Komma før at.'),
+S('Det er svært at stå på ski.',-1,'at + navneform (at stå) = intet komma.'),
+S('Hun glemte at lukke døren.',-1,'at + navneform (at lukke) = intet komma.'),
+S('Han lovede at han ville komme.',2,'»at han ville komme« er en ny sætning. Komma før at.'),
+S('Vi aftalte at mødes i parken.',-1,'at + navneform (at mødes) = intet komma.'),
+S('Træneren sagde at kampen var aflyst.',2,'»at kampen var aflyst« er en ny sætning. Komma før at.'),
+M('Hvorfor er der komma i »Jeg ved, at du kommer.«?',['Fordi at starter en ny sætning','Fordi der altid er komma før at','Fordi sætningen er lang'],'Komma før at, når at starter en ny sætning. Ikke altid – husk at + navneform.')],
+men:[
+S('Jeg løb hurtigt men bussen kørte alligevel.',3,'Altid komma før men mellem to sætninger.'),
+S('Det var koldt men solen skinnede.',3,'Altid komma før men mellem to sætninger.'),
+S('Vi ville spille fodbold men banen var lukket.',4,'Altid komma før men mellem to sætninger.'),
+S('Pizzaen så lækker ud men den var kold.',4,'Komma før men. Fælde: »så« er her et udsagnsord, ikke et bindeord.'),
+M('Hvilken er rigtig?',['Jeg har læst bogen, men jeg kan ikke huske slutningen.','Jeg har læst bogen men, jeg kan ikke huske slutningen.','Jeg har læst bogen men jeg kan ikke huske slutningen.'],'Kommaet står lige før men.'),
+M('Hvor står kommaet ved men?',['Lige før men','Lige efter men','Der er aldrig komma ved men'],'Komma før men: »…, men …«.')],
+og:[
+S('Hunden gøede og katten løb væk.',2,'»Hunden gøede« og »katten løb væk« kan begge stå alene. To gange ja = komma.'),
+S('Vi købte mælk og brød.',-1,'»brød« kan ikke stå alene. og binder bare to ting sammen = intet komma.'),
+S('Jeg spiste morgenmad og cyklede i skole.',-1,'»cyklede i skole« kan ikke stå alene – der mangler et grundled. Intet komma.'),
+S('Det tordnede og lyset gik ud.',2,'»Det tordnede« og »lyset gik ud« kan begge stå alene. Komma.'),
+S('Mathias og Ida spiller guitar.',-1,'og binder to navne sammen = intet komma.'),
+S('Min far laver mad og min mor dækker bord.',4,'To hovedsætninger: »Min far laver mad« / »min mor dækker bord«. Komma.'),
+M('Hvad er testen for komma før og?',['Kan delen før og delen efter og begge stå alene? Så komma.','Der er altid komma før og.','Der er komma, hvis sætningen er lang.'],'Hovedsætning + hovedsætning = komma. Ellers binder og bare tingene sammen.')],
+bind:[
+S('Vi tog regntøj på fordi det regnede.',4,'Komma før fordi.'),
+S('Jeg var sulten så jeg lavede en mad.',3,'Komma før så, når så binder to sætninger sammen.'),
+S('Alle klappede da sangen var slut.',2,'Komma før da.'),
+S('Hun smilede fordi hun havde vundet.',2,'Komma før fordi.'),
+S('Telefonen var død så jeg kunne ikke ringe.',3,'Komma før så.'),
+S('Jeg blev glad da jeg så karakteren.',3,'Komma før da. Fælde: »så« er her et udsagnsord (at se), ikke et bindeord.'),
+M('Hvilken er rigtig?',['Vi gik ud, da det holdt op med at regne.','Vi gik ud da, det holdt op med at regne.','Vi gik, ud da det holdt op med at regne.'],'Kommaet står lige før da.')],
+egennavne:[
+M('Hvilket navn er skrevet rigtigt?',['Anna Marie Holm','Anna marie Holm','anna Marie holm'],'Fornavn, mellemnavn og efternavn med stort.'),
+M('Hvilken adresse er rigtig?',['Holger Danskes Vej 4','Holger danskes vej 4','holger Danskes vej 4'],'Alle dele af vejnavnet med stort.'),
+M('Hvilke dele af et vejnavn skal have stort?',['Alle dele','Kun det første ord','Kun det sidste ord'],'Alle dele: Holger Danskes Vej.'),
+M('Hvilken er rigtig?',['Jeg bor på Lille Strandvej.','Jeg bor på lille Strandvej.','Jeg bor på Lille strandvej.'],'Alle dele af vejnavnet med stort.'),
+M('Hvilke dele af dit navn skal have stort?',['Fornavn, mellemnavn og efternavn','Kun fornavn','Kun fornavn og efternavn'],'Alle dele af navnet: Søren Peter Nielsen.'),
+M('Hvilken sætning er rigtig?',['Min bror Oliver Emil bor på Nørre Allé.','Min bror oliver emil bor på nørre allé.','Min Bror Oliver Emil bor på Nørre allé.'],'Navn og vejnavn med stort – men ikke almindelige ord som »bror«.')]
+};
+
+let pal,ac=null,sound=true;
+const theme=()=>{const r=document.documentElement.dataset.theme;const dark=r?r==='dark':matchMedia('(prefers-color-scheme: dark)').matches;
+pal=dark?{paper:'#18202f',line:'#27334a',ink:'#e6ecf8',ground:'#22304a',hatch:'#30405f',margin:'rgba(226,61,61,.35)'}:{paper:'#ffffff',line:'#d6e3f5',ink:'#1d2b53',ground:'#e5edf9',hatch:'#c9d7ee',margin:'rgba(226,61,61,.4)'}};
+theme();
+const beep=(f,d=.08,type='square',v=.04)=>{if(!sound)return;try{ac=ac||new AudioContext();const o=ac.createOscillator(),g=ac.createGain();o.type=type;o.frequency.value=f;g.gain.value=v;g.gain.exponentialRampToValueAtTime(.0001,ac.currentTime+d);o.connect(g).connect(ac.destination);o.start();o.stop(ac.currentTime+d)}catch(e){}};
+const rng=s=>()=>{s|=0;s=s+0x6D2B79F5|0;let t=Math.imul(s^s>>>15,1|s);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296};
+const hit=(a,b)=>a.x<b.x+b.w&&a.x+a.w>b.x&&a.y<b.y+b.h&&a.y+a.h>b.y;
+const shuffle=a=>{for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]]}return a};
+
+let state='start',li=0,lv=null,score=0,scoreStart=0,hearts=5,cam=0,t=0,parts=[];
+const P={x:60,y:380,w:30,h:40,vx:0,vy:0,on:false,face:1,coy:0,jb:0,inv:0};
+const keys={l:false,r:false,j:false};
+const used={},stats={};ORDER.forEach(r=>{used[r]=new Set();stats[r]={ok:0,bad:0}});
+let firstTry=0,totalNotes=0;
+
+function build(i){
+  const fin=LEVELS[i].r==='mix',len=fin?4200:3000,R=rng(i*97+13),solids=[],segs=[],enemies=[],coins=[],notes=[];
+  let x=0,first=true;
+  while(x<len-700){const w=first?620:Math.round(380+R()*360);first=false;const s={x,y:460,w,h:120,k:'g'};solids.push(s);segs.push(s);x+=w+Math.round(70+R()*55)}
+  const lastSeg={x,y:460,w:len+500-x,h:120,k:'g'};solids.push(lastSeg);segs.push(lastSeg);
+  segs.forEach((s,k)=>{
+    if(k>0&&k<segs.length-1&&s.w>(fin?380:450))enemies.push({x:s.x+s.w/2,y:438,w:34,h:22,vx:(R()<.5?-1:1)*(1+i*.1),min:s.x+110,max:s.x+s.w-144,alive:true});
+    if(s.w>=300&&s.x>200&&s!==lastSeg&&R()<.6){const px=Math.round(s.x+60+R()*(s.w-230));solids.push({x:px,y:360,w:110,h:22,k:'p'});for(let c=0;c<3;c++)coins.push({x:px+22+c*33,y:325,got:false})}
+    if(k>0&&s!==lastSeg)for(let c=0;c<3;c++)coins.push({x:s.x+40+c*34,y:425,got:false});
+  });
+  const rules=fin?ORDER:[LEVELS[i].r,LEVELS[i].r,LEVELS[i].r];
+  rules.forEach((r,k)=>{
+    let nx=300+(k+.5)*(len-500)/rules.length;
+    let s=segs.find(g=>nx>=g.x+70&&nx<=g.x+g.w-70);
+    if(!s){s=segs.find(g=>g.x>nx)||lastSeg;nx=s.x+90}
+    let ny=410;
+    if(k%2===1&&nx-60>s.x+40&&nx+60<s.x+s.w-40){
+      for(let q=solids.length-1;q>=0;q--){const o=solids[q];if(o.k==='p'&&o.x<nx+150&&o.x+o.w>nx-150)solids.splice(q,1)}
+      solids.push({x:nx-55,y:360,w:110,h:22,k:'p'});ny=300;
+    }
+    notes.push({x:nx-20,y:ny,w:40,h:40,r,done:false,tries:0,cd:0});
+  });
+  coins.forEach(c=>{c.w=14;c.h=18});
+  return{len,end:len+500,solids,enemies,coins,notes,gate:{x:len+20,y:220,w:30,h:240},flag:{x:len+220},cp:{x:60,y:380}};
+}
+
+const show=h=>{$('#card').innerHTML=h;$('#ov').classList.add('on');const f=$('#card').querySelector('button');if(f)f.focus({preventScroll:true})};
+const hide=()=>$('#ov').classList.remove('on');
+const hud=()=>{$('#hl').textContent=lv?LEVELS[li].t:'Klar?';$('#hh').textContent='♥'.repeat(Math.max(hearts,0))+'♡'.repeat(5-Math.max(hearts,0));$('#hn').textContent=lv?`Sedler ${lv.notes.filter(n=>n.done).length}/${lv.notes.length}`:'';$('#hs').textContent=score+' point'};
+
+function startScreen(){state='start';lv=build(0);
+  show(`<span class="tag">8. klasse · tegnsætning</span><h2>Kommajagten</h2><p>Løb gennem skrivehæftet som et lille komma. Hop på de <b>gule sedler</b>, og svar på spørgsmålet. Hop på <b>fejlormene</b>, eller undgå dem. Porten for enden åbner, når alle sedler er løst.</p><div class="btns"><button class="b" id="go">Start fra bane 1</button></div><p style="margin:16px 0 0;font-weight:700">Eller vælg en bane:</p><div class="lvls">${LEVELS.map((L,i)=>`<button class="b alt" data-l="${i}">${L.t}</button>`).join('')}</div>`);
+  $('#go').onclick=()=>startLevel(0);$('#card').querySelectorAll('[data-l]').forEach(b=>b.onclick=()=>startLevel(+b.dataset.l));hud()}
+
+function startLevel(i){li=i;lv=build(i);hearts=5;scoreStart=score;Object.assign(P,{x:60,y:380,vx:0,vy:0,inv:0,jb:0});cam=0;state='intro';hud();
+  const L=LEVELS[i];const cards=L.r==='mix'?'<p>Alle seks regler på én bane – som til prøven. Brug knappen »Regel« oppe til højre, hvis du er i tvivl.</p>':`<div class="rule">${RULES[L.r].card}</div>`;
+  show(`<span class="tag">${L.t}</span><h2>${L.r==='mix'?'Prøvebanen':RULES[L.r].name}</h2>${cards}<div class="btns"><button class="b" id="go">Spil banen</button></div>`);
+  $('#go').onclick=()=>{hide();state='play'}}
+
+let cur=null;
+function ask(n){
+  state='q';keys.l=keys.r=keys.j=false;
+  const pool=QB[n.r];if(used[n.r].size>=pool.length)used[n.r].clear();
+  let idx;do{idx=Math.floor(Math.random()*pool.length)}while(used[n.r].has(idx));used[n.r].add(idx);
+  const q=pool[idx];cur={n,q,hint:false};
+  let body;
+  if(q.t==='slot'){
+    body=`<p>Klik der, hvor ${q.mark==='.'?'punktummet':'kommaet'} skal stå.</p><div class="sent">${q.w.map((w,i)=>(i?`<button class="gap" data-g="${i}" aria-label="Mellem ${q.w[i-1]} og ${w}"></button>`:'')+`<span>${w}</span>`).join('')}</div>${q.mark===','?'<button class="opt none" data-g="-1">Intet komma</button>':''}`;
+  }else{
+    const o=shuffle(q.o.map((txt,i)=>({txt,i})));
+    body=`<p style="font-weight:700;font-size:18px">${q.q}</p><div class="opts">${o.map(x=>`<button class="opt" data-o="${x.i}">${x.txt}</button>`).join('')}</div>`;
+  }
+  show(`<div style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap"><span class="tag">${RULES[n.r].name}</span><button class="b alt" id="hint" style="min-height:36px;padding:4px 12px;font-size:14px">Vis reglen (halve point)</button></div><div id="hb"></div>${body}<div id="fb"></div>`);
+  $('#hint').onclick=()=>{cur.hint=true;$('#hb').innerHTML=`<div class="rule">${RULES[n.r].card}</div>`;$('#hint').remove()};
+  $('#card').querySelectorAll('[data-g],[data-o]').forEach(b=>b.onclick=()=>answer(b));
+  const first=$('#card').querySelector('.gap,.opt');if(first)first.focus({preventScroll:true});
+}
+function fixed(q){const w=[...q.w];if(q.ans>0){w[q.ans-1]+=q.mark;if(q.mark==='.')w[q.ans]=w[q.ans][0].toUpperCase()+w[q.ans].slice(1)}return w.join(' ')}
+function answer(b){
+  const {n,q}=cur;let ok;
+  $('#card').querySelectorAll('[data-g],[data-o]').forEach(x=>x.disabled=true);
+  if(q.t==='slot'){const g=+b.dataset.g;ok=g===q.ans;
+    b.classList.add(ok?'ok':'no');if(g>0)b.textContent=q.mark;
+    if(!ok){const c=$('#card').querySelector(`[data-g="${q.ans}"]`);if(c){c.classList.add('ok');if(q.ans>0)c.textContent=q.mark}}
+  }else{ok=+b.dataset.o===0;b.classList.add(ok?'ok':'no');if(!ok)$('#card').querySelector('[data-o="0"]').classList.add('ok')}
+  const pts=ok?(n.tries===0&&!cur.hint?100:50):0;
+  if(ok){stats[n.r].ok++;n.done=true;score+=pts;lv.cp={x:n.x,y:n.y-10};if(n.tries===0)firstTry++;totalNotes++;beep(660,.09,'triangle');setTimeout(()=>beep(990,.12,'triangle'),90)}
+  else{stats[n.r].bad++;n.tries++;n.cd=120;beep(180,.2,'sawtooth')}
+  const sol=q.t==='slot'?`<p class="ex">${fixed(q)}</p>`:'';
+  $('#fb').innerHTML=`<div class="fb ${ok?'ok':'no'}">${ok?`Rigtigt! +${pts} point`:'Ikke helt. Sedlen giver dig et nyt spørgsmål, når du hopper på den igen.'}${sol}<p style="margin:6px 0 0;font-weight:400">${q.ex}</p></div><div class="btns"><button class="b" id="nx">Videre</button></div>`;
+  $('#nx').onclick=resume;$('#nx').focus({preventScroll:true});hud();
+}
+function resume(){hide();state='play';P.inv=Math.max(P.inv,45)}
+
+function hurt(fall){
+  hearts--;beep(140,.25,'sawtooth');
+  if(fall){Object.assign(P,{x:lv.cp.x,y:lv.cp.y-40,vx:0,vy:0});P.inv=90}
+  else{P.inv=90;P.vx=-P.face*3.5;P.vy=-5}
+  hud();
+  if(hearts<=0){state='over';score=scoreStart;show(`<h2>Av! Hjerterne er brugt.</h2><p>Fejlormene fik dig denne gang. Banen starter forfra – dine point fra banen nulstilles.</p><div class="btns"><button class="b" id="go">Prøv banen igen</button><button class="b alt" id="menu">Vælg en anden bane</button></div>`);$('#go').onclick=()=>startLevel(li);$('#menu').onclick=startScreen}
+}
+function levelDone(){
+  state='done';beep(523,.1,'triangle');setTimeout(()=>beep(784,.18,'triangle'),110);
+  const last=li===LEVELS.length-1;
+  show(`<span class="tag">${LEVELS[li].t}</span><h2>Bane klaret!</h2><p class="big">${score} point</p><p>Du har ${hearts} hjerter tilbage.</p><div class="btns"><button class="b" id="go">${last?'Se dit resultat':'Næste bane'}</button>${last?'':'<button class="b alt" id="end">Stop og se resultat</button>'}</div>`);
+  $('#go').onclick=()=>last?results():startLevel(li+1);const e=$('#end');if(e)e.onclick=results;
+}
+function results(){
+  state='end';const rows=ORDER.filter(r=>stats[r].ok+stats[r].bad>0);
+  const weak=rows.filter(r=>stats[r].bad>0).map(r=>RULES[r].name);
+  show(`<h2>Dit resultat</h2><p class="big">${score} point</p><p>Rigtigt i første forsøg på <b>${firstTry} af ${totalNotes}</b> sedler.</p>${rows.length?`<table><thead><tr><th>Regel</th><th class="n">Rigtige</th><th class="n">Forkerte</th></tr></thead><tbody>${rows.map(r=>`<tr><td>${RULES[r].name}</td><td class="n">${stats[r].ok}</td><td class="n">${stats[r].bad}</td></tr>`).join('')}</tbody></table>`:''}<p>${weak.length?`<b>Øv mere i:</b> ${weak.join(', ')}. Find reglen i oversigten på elevarket, og lav opgaven til den igen.`:'Ingen fejl. Du kan reglerne – prøv Finalen, hvis du ikke har gjort det.'}</p><div class="btns"><button class="b" id="go">Spil igen</button></div>`);
+  $('#go').onclick=()=>{score=0;firstTry=0;totalNotes=0;ORDER.forEach(r=>{stats[r]={ok:0,bad:0}});startScreen()};
+}
+
+function step(){
+  const ax=(keys.r?1:0)-(keys.l?1:0);
+  P.vx+=ax*.7;if(!ax)P.vx*=P.on?.72:.94;P.vx=Math.max(-4.8,Math.min(4.8,P.vx));if(ax)P.face=ax;
+  if(P.jb>0&&P.coy>0){P.vy=-12.2;P.jb=0;P.coy=0;beep(520,.06)}if(P.jb>0)P.jb--;
+  P.vy=Math.min(P.vy+(!keys.j&&P.vy<0?1.1:.6),14);
+  const solid=lv.notes.every(n=>n.done)?lv.solids:[...lv.solids,lv.gate];
+  P.x+=P.vx;for(const s of solid)if(hit(P,s)){P.x=P.vx>0?s.x-P.w:s.x+s.w;P.vx=0}
+  P.x=Math.max(0,Math.min(P.x,lv.end-P.w));
+  P.y+=P.vy;P.on=false;for(const s of solid)if(hit(P,s)){if(P.vy>0){P.y=s.y-P.h;P.on=true}else P.y=s.y+s.h;P.vy=0}
+  P.coy=P.on?6:P.coy-1;if(P.inv>0)P.inv--;
+  if(P.y>600){hurt(true);if(state!=='play')return}
+  for(const e of lv.enemies){if(!e.alive)continue;e.x+=e.vx;if(e.x<e.min||e.x>e.max)e.vx*=-1;
+    if(hit(P,e)){if(P.vy>0&&P.y+P.h-e.y<16){e.alive=false;P.vy=-8;score+=50;beep(300,.08);puff(e.x+17,e.y+11,'#e23d3d');hud()}
+      else if(P.inv<=0){hurt(false);if(state!=='play')return}}}
+  for(const c of lv.coins)if(!c.got&&hit(P,c)){c.got=true;score+=10;beep(1200,.04,'triangle',.03);puff(c.x+7,c.y+9,'#4d7cc9');hud()}
+  for(const n of lv.notes){if(n.cd>0)n.cd--;if(!n.done&&n.cd<=0&&hit(P,n)){ask(n);return}}
+  if(lv.notes.every(n=>n.done)&&P.x+P.w>lv.flag.x)levelDone();
+  cam=Math.max(0,Math.min(P.x-360,lv.end-W));
+  parts=parts.filter(p=>(p.life-->0));parts.forEach(p=>{p.x+=p.vx;p.y+=p.vy;p.vy+=.2});
+}
+const puff=(x,y,c)=>{for(let i=0;i<8;i++)parts.push({x,y,vx:(Math.random()-.5)*4,vy:-Math.random()*4,life:24,c})};
+
+const rr=(x,y,w,h,r)=>{ctx.beginPath();ctx.roundRect(x,y,w,h,r)};
+function commaShape(x,y,s,c){ctx.fillStyle=c;ctx.beginPath();ctx.arc(x,y,7*s,0,Math.PI*2);ctx.fill();ctx.beginPath();ctx.moveTo(x+6*s,y+2*s);ctx.quadraticCurveTo(x+7*s,y+12*s,x-3*s,y+17*s);ctx.quadraticCurveTo(x+2*s,y+10*s,x,y+6*s);ctx.fill()}
+function draw(){
+  if(t%30===0)theme();
+  ctx.setTransform(dpr,0,0,dpr,0,0);
+  ctx.fillStyle=pal.paper;ctx.fillRect(0,0,W,H);
+  ctx.strokeStyle=pal.line;ctx.lineWidth=1.5;for(let y=60;y<H;y+=34){ctx.beginPath();ctx.moveTo(0,y);ctx.lineTo(W,y);ctx.stroke()}
+  const mx=70-cam*.5;if(mx>-10){ctx.strokeStyle=pal.margin;ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(mx,0);ctx.lineTo(mx,H);ctx.stroke()}
+  if(!lv)return;
+  ctx.save();ctx.translate(-Math.round(cam),0);
+  for(const s of lv.solids){if(s.x+s.w<cam-20||s.x>cam+W+20)continue;
+    if(s.k==='g'){ctx.fillStyle=pal.ground;ctx.fillRect(s.x,s.y,s.w,s.h);ctx.save();ctx.beginPath();ctx.rect(s.x,s.y,s.w,s.h);ctx.clip();ctx.strokeStyle=pal.hatch;ctx.lineWidth=2;for(let hx=s.x-120;hx<s.x+s.w;hx+=16){ctx.beginPath();ctx.moveTo(hx,s.y+s.h);ctx.lineTo(hx+120,s.y);ctx.stroke()}ctx.restore();ctx.fillStyle=pal.ink;ctx.fillRect(s.x,s.y,s.w,4)}
+    else{ctx.fillStyle='rgba(0,0,0,.12)';rr(s.x+4,s.y+6,s.w,s.h,7);ctx.fill();ctx.fillStyle='#f5a3b5';rr(s.x,s.y,s.w,s.h,7);ctx.fill();ctx.fillStyle='#4d7cc9';ctx.fillRect(s.x+s.w*.58,s.y,s.w*.42-6,s.h);ctx.strokeStyle=pal.ink;ctx.lineWidth=2.5;rr(s.x,s.y,s.w,s.h,7);ctx.stroke()}}
+  for(const c of lv.coins)if(!c.got)commaShape(c.x+7,c.y+6+Math.sin(t/12+c.x)*2,1,'#4d7cc9');
+  for(const n of lv.notes){const b=n.done?0:Math.sin(t/14+n.x)*3;ctx.save();ctx.translate(n.x+20,n.y+20+b);ctx.rotate(n.done?.06:-.06);
+    ctx.fillStyle='rgba(0,0,0,.15)';ctx.fillRect(-17,-15,40,40);ctx.fillStyle=n.done?'#2f9e6b':'#ffd84d';ctx.fillRect(-20,-20,40,40);
+    ctx.fillStyle='rgba(0,0,0,.12)';ctx.beginPath();ctx.moveTo(20,8);ctx.lineTo(20,20);ctx.lineTo(8,20);ctx.fill();
+    if(n.tries&&!n.done){ctx.strokeStyle='#e23d3d';ctx.lineWidth=3;ctx.strokeRect(-20,-20,40,40)}
+    ctx.fillStyle=n.done?'#fff':'#1d2b53';ctx.font='32px "Patrick Hand", cursive';ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText(n.done?'✓':'?',0,2);ctx.restore()}
+  const open=lv.notes.every(n=>n.done),g=lv.gate;
+  if(!open){for(let y=g.y;y<g.y+g.h;y+=20){ctx.fillStyle=((y-g.y)/20)%2?'#ffffff':'#e23d3d';ctx.fillRect(g.x,y,g.w,20)}ctx.strokeStyle=pal.ink;ctx.lineWidth=3;ctx.strokeRect(g.x,g.y,g.w,g.h);
+    const d=lv.notes.filter(n=>n.done).length;ctx.fillStyle=pal.ink;ctx.font='22px "Patrick Hand", cursive';ctx.textAlign='center';ctx.fillText(`Løs alle sedler (${d}/${lv.notes.length})`,g.x+15,g.y-14)}
+  else{ctx.setLineDash([6,6]);ctx.strokeStyle=pal.hatch;ctx.lineWidth=2;ctx.strokeRect(g.x,g.y,g.w,g.h);ctx.setLineDash([])}
+  const f=lv.flag;ctx.fillStyle=pal.ink;ctx.fillRect(f.x,280,5,180);ctx.fillStyle='#ffd84d';ctx.beginPath();ctx.moveTo(f.x+5,284);ctx.lineTo(f.x+75,302+Math.sin(t/10)*4);ctx.lineTo(f.x+5,326);ctx.fill();ctx.strokeStyle=pal.ink;ctx.lineWidth=2.5;ctx.stroke();ctx.fillStyle='#1d2b53';ctx.beginPath();ctx.arc(f.x+30,305,8,0,Math.PI*2);ctx.fill();
+  ctx.font='20px "Patrick Hand", cursive';ctx.fillStyle=pal.ink;ctx.textAlign='center';ctx.fillText('Mål',f.x+3,272);
+  for(const e of lv.enemies){if(!e.alive)continue;const w=Math.sin(t/6+e.x/20)*2;ctx.fillStyle='#e23d3d';rr(e.x,e.y+w*.3,e.w,e.h,11);ctx.fill();
+    ctx.strokeStyle='#ffffff';ctx.lineWidth=2;ctx.beginPath();for(let k=0;k<5;k++)ctx.lineTo(e.x+5+k*6,e.y+15+(k%2?-4:0));ctx.stroke();
+    const ex=e.vx>0?e.x+24:e.x+10;ctx.fillStyle='#fff';ctx.beginPath();ctx.arc(ex,e.y+8,4,0,Math.PI*2);ctx.fill();ctx.fillStyle='#1d2b53';ctx.beginPath();ctx.arc(ex+(e.vx>0?1:-1),e.y+8,2,0,Math.PI*2);ctx.fill()}
+  for(const p of parts){ctx.fillStyle=p.c;ctx.globalAlpha=p.life/24;ctx.fillRect(p.x,p.y,4,4)}ctx.globalAlpha=1;
+  if(!(P.inv>0&&Math.floor(t/4)%2)){const cx=P.x+15,cy=P.y+14,sq=P.on?0:Math.min(Math.abs(P.vy)/14,1)*2;
+    ctx.fillStyle='rgba(0,0,0,.15)';ctx.beginPath();ctx.ellipse(cx,P.y+P.h+2,13,3,0,0,Math.PI*2);ctx.fill();
+    ctx.fillStyle=pal.ink;ctx.beginPath();ctx.arc(cx,cy,14-sq,0,Math.PI*2);ctx.fill();
+    ctx.beginPath();ctx.moveTo(cx+P.face*12,cy+6);ctx.quadraticCurveTo(cx+P.face*12,cy+22,cx-P.face*8,cy+27);ctx.quadraticCurveTo(cx+P.face*2,cy+18,cx-P.face*2,cy+12);ctx.fill();
+    ctx.fillStyle='#ffd84d';ctx.fillRect(cx-13,cy-7,26,4);
+    ctx.fillStyle='#fff';ctx.beginPath();ctx.arc(cx+P.face*5,cy-1,4.5,0,Math.PI*2);ctx.fill();ctx.fillStyle='#1d2b53';ctx.beginPath();ctx.arc(cx+P.face*6.5,cy-1,2.2,0,Math.PI*2);ctx.fill()}
+  ctx.restore();
+}
+let last=0,acc=0;
+function loop(ts){const dt=Math.min(50,ts-last||16);last=ts;if(state==='play'){acc+=dt;while(acc>=1000/60&&state==='play'){step();acc-=1000/60}}else acc=0;t++;draw();requestAnimationFrame(loop)}
+
+const map={ArrowLeft:'l',a:'l',A:'l',ArrowRight:'r',d:'r',D:'r',ArrowUp:'j',w:'j',W:'j',' ':'j'};
+addEventListener('keydown',e=>{const k=map[e.key];if(state==='play'&&k){e.preventDefault();if(k==='j'&&!keys.j)P.jb=8;keys[k]=true}});
+addEventListener('keyup',e=>{const k=map[e.key];if(k)keys[k]=false});
+addEventListener('blur',()=>{keys.l=keys.r=keys.j=false});
+document.querySelectorAll('#pad button').forEach(b=>{const k=b.dataset.k;
+  b.addEventListener('pointerdown',e=>{e.preventDefault();if(k==='j'&&!keys.j)P.jb=8;keys[k]=true;try{b.setPointerCapture(e.pointerId)}catch(_){}});
+  ['pointerup','pointercancel','lostpointercapture'].forEach(ev=>b.addEventListener(ev,()=>keys[k]=false))});
+$('#hm').onclick=()=>{sound=!sound;$('#hm').textContent='Lyd: '+(sound?'til':'fra')};
+$('#hr').onclick=()=>{if(state!=='play'||!lv)return;state='rule';const r=LEVELS[li].r;
+  show(`<h2>Reglerne</h2>${(r==='mix'?ORDER:[r]).map(x=>`<p class="tag">${RULES[x].name}</p><div class="rule">${RULES[x].card}</div>`).join('')}<div class="btns"><button class="b" id="go">Tilbage til spillet</button></div>`);$('#go').onclick=resume};
+startScreen();requestAnimationFrame(loop);
+}
+</script>
+</body>
+</html>

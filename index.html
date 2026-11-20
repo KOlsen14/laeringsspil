@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html lang="da">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Læringsspil</title>
+<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;800&family=Patrick+Hand&display=swap" rel="stylesheet">
+<style>
+:root{color-scheme:light dark;--bg:light-dark(#e9f0fa,#0d1320);--paper:light-dark(#fff,#18202f);--ink:light-dark(#1d2b53,#e6ecf8);--muted:light-dark(#55627f,#9fb0cf)}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:17px/1.5 Nunito,system-ui,sans-serif}
+main{max-width:900px;margin:0 auto;padding:clamp(20px,5vw,56px) 16px}
+h1{font:400 clamp(40px,7vw,64px)/1 "Patrick Hand",cursive;margin:0 0 8px}
+h1 span{background:linear-gradient(transparent 55%,#ffd84d 55%);padding:0 6px}
+p{color:var(--muted);margin:0 0 28px}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:16px}
+a.game{display:block;background:var(--paper);color:var(--ink);text-decoration:none;border:3px solid var(--ink);border-radius:16px;box-shadow:5px 5px 0 var(--ink);padding:20px}
+a.game:hover,a.game:focus-visible{background:#ffd84d;color:#1d2b53;outline:none}
+a.game b{font:400 30px/1.1 "Patrick Hand",cursive;display:block;margin-bottom:6px}
+a.game span{font-size:15px}
+</style>
+</head>
+<body>
+<main>
+<h1><span>Læringsspil</span></h1>
+<p>Spil til dansk i udskolingen. Vælg et spil – det kræver ikke login, og der gemmes ingen oplysninger.</p>
+<div class="grid">
+<a class="game" href="kommajagten/"><b>Kommajagten</b><span>8. klasse · Punktum, komma og egennavne. Løb, hop og løs sedlerne.</span></a>
+</div>
+</main>
+</body>
+</html>
